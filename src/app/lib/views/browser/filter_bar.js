@@ -2,6 +2,9 @@
     'use strict';
     var clipboard = nw.Clipboard.get();
 
+    var last_random_movie = '';
+    var sanitize = require('butter-sanitize');
+
     App.View.FilterBar = Backbone.Marionette.ItemView.extend({
         className: 'filter-bar',
         ui: {
@@ -442,28 +445,101 @@
             App.vent.trigger(this.type + ':update', []);
         },
 
+
+        butter_movie_processCloudFlareHack: function(options, url) {
+        	var req = options;
+        	var match = url.match(/^cloudflare\+(.*):\/\/(.*)/);
+        	if (match) {
+        		req = _.extend(req, {
+        			uri: match[1] + '://cloudflare.com/',
+        			headers: {
+        				'Host': match[2],
+        				'User-Agent': 'Mozilla/5.0 (Linux) AppleWebkit/534.30 (KHTML, like Gecko) PT/3.8.0'
+        			}
+        		});
+        	}
+        	return req;
+        },
+
+        butter_movie_format: function(movie) {
+            var results = {
+        				type: 'movie',
+        				imdb_id: movie.imdb_id,
+        				title: movie.title,
+        				year: movie.year,
+        				genre: movie.genres,
+        				rating: parseInt(movie.rating.percentage, 10) / 10,
+        				runtime: movie.runtime,
+                        images: movie.images,
+        				image: movie.images.poster,
+        				cover: movie.images.poster,
+        				backdrop: movie.images.fanart,
+                        poster: movie.images.poster,
+        				synopsis: movie.synopsis,
+        				trailer: movie.trailer !== null ? movie.trailer : false,
+        				certification: movie.certification,
+        				torrents: movie.torrents['en'] !== null ? movie.torrents['en'] : movie.torrents[Object.keys(movie.torrents)[0]],
+        				langs: movie.torrents
+        			};
+        	return sanitize(results);
+        },
+
+        butter_movie_get: function(url) {
+            var that = this;
+        	var deferred = Q.defer();
+
+        	var options = {
+        		url: url,
+        		json: true
+        	};
+
+        	var req = this.butter_movie_processCloudFlareHack(options, url);
+        	console.info('Request to MovieApi', req.url);
+        	request(req, function(err, res, data) {
+        		if (err || res.statusCode >= 400) {
+        			console.warn('MovieAPI endpoint \'%s\' failed.', url);
+                    return deferred.reject(err || 'Status Code is above 400');
+        		} else if (!data || data.error) {
+        			err = data ? data.status_message : 'No data returned';
+        			console.error('API error:', err);
+        			return deferred.reject(err);
+        		} else {
+        			return deferred.resolve(that.butter_movie_format(data));
+        		}
+        	});
+
+        	return deferred.promise;
+        },
+
         randomMovie: function () {
             var that = this;
+            console.log('Sending random movie request');
+            App.vent.trigger('movie:closeDetail');
             $('.spinner').show();
 
-            App.Providers.get('MovieApi').random()
+        	var url = App.Config.getProviderForType('movie')[0].apiURL[0] + '/random/movie';
+            this.butter_movie_get(url)
                 .then(function (data) {
-                    if (App.watchedMovies.indexOf(data.imdb_code) !== -1) {
-                        that.randomMovie();
-                        return;
-                    }
-                    that.model.set({
-                        isRandom: true,
-                        keywords: data.imdb_code,
-                        genre: ''
-                    });
-                    App.vent.trigger('movie:closeDetail');
-                    App.vent.on('list:loaded', function () {
-                        if (that.model.get('isRandom')) {
-                            $('.main-browser .items .cover')[0].click();
-                            that.model.set('isRandom', false);
-                        }
-                    });
+
+                  if (App.watchedMovies.indexOf(data.imdb_id) !== -1) {
+                      that.randomMovie();
+                      return;
+                  }
+                  if (last_random_movie === data.imdb_id) {
+                      $('.notification_alert').text(i18n.__('Waiting for new random movie....')).fadeIn('fast').delay(500).fadeOut('fast');
+                      console.log('Random movie is the same as last one. Getting new random in 2000ms.');
+                      setTimeout(function() { that.randomMovie(); },2000);
+                      return;
+                  }
+                  $('.spinner').hide();
+
+                  last_random_movie=data.imdb_id;
+
+                  var type="movie";
+                  var model_type = type.charAt(0).toUpperCase() + type.slice(1);
+
+                  data.health=false;
+                  App.vent.trigger(type+':showDetail', new App.Model[model_type](data) );
                 })
                 .catch(function (err) {
                     $('.spinner').hide();
