@@ -20,7 +20,7 @@
     var getPage = function (items, page) {
         var byPage = 50;
         return items.slice((page-1)*byPage,page*byPage);
-    }
+    };
 
     var sort = function (items, filters) {
         var sorted = [],
