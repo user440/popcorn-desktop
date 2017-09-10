@@ -8,7 +8,7 @@
     };
 
     var queryTorrents = function (filters) {
-        return App.db.getBookmarks(filters)
+        return App.db.getAllBookmarks(filters)
             .then(function (data) {
                     return data;
                 },
@@ -16,6 +16,11 @@
                     return [];
                 });
     };
+
+    var getPage = function (items, page) {
+        var byPage = 50;
+        return items.slice((page-1)*byPage,page*byPage);
+    }
 
     var sort = function (items, filters) {
         var sorted = [],
@@ -182,7 +187,8 @@
         return queryTorrents(params)
             .then(formatForButter)
             .then(function (items) {
-                return sort(items, filters);
+                items=sort(items, filters);
+                return getPage(items,filters.page);
             });
     };
 
