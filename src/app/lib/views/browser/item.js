@@ -38,9 +38,6 @@
                 img = (images && typeof images.poster !== 'object') ? images.poster : this.model.get('image'),
                 watched, cached, that = this;
 
-            // dirty fix for missing anime covers from hummingbird.me - remove when animeApi return valid cover urls
-            if (img !== undefined && img.indexOf('static.hummingbird.me/anime/poster_images') !== -1) { img='https://media.kitsu.io/anime/poster_images/' + imdb + '/small.jpg'; }
-
             switch (itemtype) {
             case 'bookmarkedshow':
                 watched = App.watchedShows.indexOf(imdb) !== -1;
@@ -243,12 +240,6 @@
                     .then(function (data) {
                         //console.log(data, Type);
                         data.provider = provider.name;
-
-                         // dirty fix for missing anime covers from hummingbird.me - remove when animeApi return valid cover urls
-                        if (data.images !== undefined && data.images.poster !== undefined && data.images.poster.indexOf('static.hummingbird.me/anime/poster_images') !== -1) {
-                            data.images.banner=data.images.fanart=data.images.poster='https://media.kitsu.io/anime/poster_images/' + data.imdb_id + '/small.jpg';
-                        }
-
                         $('.spinner').hide();
                         App.vent.trigger(type + ':showDetail', new App.Model[Type](data));
                     }).catch(function (err) {
@@ -271,10 +262,15 @@
                 if (Settings.watchedCovers === 'fade') {
                     this.$el.removeClass('watched');
                 }
-                that.model.set('watched', false);
-                App.vent.trigger('movie:unwatched', {
-                    imdb_id: that.model.get('imdb_id')
-                });
+                Database.markMovieAsNotWatched({
+                        imdb_id: this.model.get('imdb_id')
+                    }, true)
+                    .then(function () {
+                        that.model.set('watched', false);
+                        App.vent.trigger('movie:unwatched', {
+                            imdb_id: that.model.get('imdb_id')
+                        }, 'seen');
+                    });
             } else {
                 this.ui.watchedIcon.addClass('selected');
                 switch (Settings.watchedCovers) {
@@ -285,10 +281,16 @@
                     this.$el.remove();
                     break;
                 }
-                that.model.set('watched', true);
-                App.vent.trigger('movie:watched', {
-                    imdb_id: that.model.get('imdb_id')
-                });
+                Database.markMovieAsWatched({
+                        imdb_id: this.model.get('imdb_id'),
+                        from_browser: true
+                    }, true)
+                    .then(function () {
+                        that.model.set('watched', true);
+                        App.vent.trigger('movie:watched', {
+                            imdb_id: that.model.get('imdb_id')
+                        }, 'seen');
+                    });
 
             }
 
