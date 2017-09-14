@@ -26,6 +26,7 @@
         return data;
     };
 
+    
     var formatForButter = function (data_obj) {
         var data = {};
         var multi_id = 0;
