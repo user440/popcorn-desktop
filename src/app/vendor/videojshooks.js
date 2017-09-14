@@ -23,6 +23,7 @@ vjs.Player.prototype.reportUserActivity = function (event) {
     this.userActivity_ = true;
 };
 
+
 vjs.Player.prototype.listenForUserActivity = function () {
     var onActivity, onMouseDown, mouseInProgress, onMouseUp,
         activityCheck, inactivityTimeout;
