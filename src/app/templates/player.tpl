@@ -57,10 +57,23 @@
 </div>
 <%
     var subArray = [];
+    var langcode2 = "";
+    var multi_id = "";
+
     for (var langcode in subtitle) {
+
+        if (langcode.indexOf('|')>0) {
+            multi_id = langcode.substr(langcode.indexOf('|')+1,99);
+            langcode2 = langcode.substr(0,langcode.indexOf('|'));
+        } else {
+            multi_id = "1";
+            langcode2 = langcode;
+        }
+
         subArray.push({
             "language": langcode,
-            "languageName": (App.Localization.langcodes[langcode] !== undefined ? App.Localization.langcodes[langcode].nativeName : langcode),
+            "languageName": (App.Localization.langcodes[langcode2] !== undefined ? App.Localization.langcodes[langcode2].nativeName : langcode) + '... ' + multi_id,
+            "multi_id": multi_id,
             "sub": subtitle[langcode]
         });
     }
@@ -80,7 +93,7 @@
         if(defaultSub == subArray[index].language)
             imDefault = "default";
 
-        subtracks += '<track kind="subtitles" src="' + subArray[index].sub + '" srclang="'+ subArray[index].language +'" label="' + subArray[index].languageName + '" charset="utf-8" '+ imDefault +' />';
+        subtracks += '<track kind="subtitles" src="' + subArray[index].sub + '" srclang="'+ subArray[index].language +'" label="' + (subArray[index].multi_id == '1' ? subArray[index].languageName.substr(0,subArray[index].languageName.indexOf('...')) : subArray[index].languageName.substr(subArray[index].languageName.indexOf('...'),99) ) + '" charset="utf-8" '+ imDefault +' />';
     }
 %>
 <video id="video_player" width="100%" height="100%" class="video-js vjs-popcorn-skin" controls preload="auto" autoplay >
