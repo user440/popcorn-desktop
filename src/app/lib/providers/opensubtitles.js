@@ -32,7 +32,7 @@
     var formatForButter = function (data_obj) {
         var data = {};
         var multi_id = 0;
-        var multi_langcode = "";
+        var multi_langcode = '';
         var multi_urls = {};
 
         // formating subtitle object data to pre-multiple subtitle format
