@@ -20,6 +20,7 @@
             }
         }
     };
+
     
     var downloadFromUrl = function (data) {
         return new Promise(function (resolve, reject) {
