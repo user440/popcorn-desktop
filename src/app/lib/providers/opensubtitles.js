@@ -34,7 +34,7 @@
         for (const[langcode,value] of Object.entries(data_obj)) {
             multi_id=1;
             value.forEach(function(subtitle) {
-                if (multi_id ==1) {
+                if (multi_id === 1) {
                     data[ langcode ] = subtitle;
                 } else {
                     data[ langcode + '|' + multi_id.toString() ] = subtitle;
