@@ -19,10 +19,12 @@
     };
 
     var normalizeLangCodes = function (data) {
-        if ('pb' in data) {
-            data['pt-br'] = data['pb'];
-            delete data['pb'];
-        }
+        Object.keys(data).forEach(function(key,index) {
+            if (key.indexOf('pt-br') == 0) {
+                data[key] = data[ key.replace('pt-br','pb') ];
+                delete data[key];
+            }
+        });
         return data;
     };
 
