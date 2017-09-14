@@ -26,7 +26,23 @@
         return data;
     };
 
-    var formatForButter = function (data) {
+    var formatForButter = function (data_obj) {
+        var data = {};
+        var multi_id = 0;
+
+        // formating returned subtitle object into array
+        for (const[langcode,value] of Object.entries(data_obj)) {
+            multi_id=1;
+            value.forEach(function(subtitle) {
+                if (multi_id ==1) {
+                    data[ langcode ] = subtitle;
+                } else {
+                    data[ langcode + '|' + multi_id.toString() ] = subtitle;
+                }
+                multi_id++;
+            });
+        }
+
         data = normalizeLangCodes(data);
         for (var lang in data) {
             data[lang] = data[lang].url;
@@ -36,6 +52,8 @@
 
     OpenSubtitles.prototype.fetch = function (queryParams) {
         queryParams.extensions = ['srt'];
+        // this will return all available subtitles, not just 1 per language
+        queryParams.limit='all';
         return openSRT.search(queryParams)
             .then(formatForButter);
     };
