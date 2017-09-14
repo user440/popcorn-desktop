@@ -20,7 +20,7 @@
 
     var normalizeLangCodes = function (data) {
         Object.keys(data).forEach(function(key,index) {
-            if (key.indexOf('pt-br') == 0) {
+            if (key.indexOf('pt-br') === 0) {
                 data[key] = data[ key.replace('pt-br','pb') ];
                 delete data[key];
             }
@@ -32,17 +32,25 @@
     var formatForButter = function (data_obj) {
         var data = {};
         var multi_id = 0;
+        var multi_langcode = "";
+        var multi_urls = {};
 
-        // formating returned subtitle object into array
+        // formating subtitle object data to pre-multiple subtitle format
         for (const[langcode,value] of Object.entries(data_obj)) {
             multi_id=1;
+            multi_urls = {};
             value.forEach(function(subtitle) {
-                if (multi_id === 1) {
-                    data[ langcode ] = subtitle;
-                } else {
-                    data[ langcode + '|' + multi_id.toString() ] = subtitle;
+                // filtering already existing urls
+                if ( !(subtitle.url in multi_urls) ) {
+                    multi_langcode = langcode;
+                    if (multi_id > 1) {
+                        // first subtitle without multi-subtitle format because of defaultSubtitle from settings
+                        multi_langcode += '|' + multi_id.toString();
+                    }
+                    data[multi_langcode] = subtitle;
+                    multi_urls[subtitle.url] = '';
+                    multi_id++;
                 }
-                multi_id++;
             });
         }
 
