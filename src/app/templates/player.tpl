@@ -60,6 +60,7 @@
     var langcode2 = "";
     var multi_id = "";
 
+
     for (var langcode in subtitle) {
 
         if (langcode.indexOf('|')>0) {
