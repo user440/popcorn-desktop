@@ -132,6 +132,7 @@ var Database = {
     },
 
     // format: {page: page, keywords: title}
+    // format: {page: page, keywords: title}
     getBookmarks: function (data) {
         var page = data.page - 1;
         var byPage = 50;
@@ -145,16 +146,14 @@ var Database = {
         return promisifyDb(db.bookmarks.find(query).skip(offset).limit(byPage));
     },
 
-    getAllBookmarks: function () {
-        return promisifyDb(db.bookmarks.find({}))
-            .then(function (data) {
-                var bookmarks = [];
-                if (data) {
-                    bookmarks = extractIds(data);
-                }
+    getAllBookmarks: function (data) {
+        var query = {};
 
-                return bookmarks;
-            });
+        if (data !== undefined && data.type) {
+            query.type = data.type;
+        }
+
+        return promisifyDb(db.bookmarks.find(query));
     },
 
     markMoviesWatched: function (data) {
@@ -318,7 +317,7 @@ var Database = {
     getUserInfo: function () {
         var bookmarks = Database.getAllBookmarks()
             .then(function (data) {
-                App.userBookmarks = data;
+                App.userBookmarks = extractIds(data);
             });
 
         var movies = Database.getMoviesWatched()
