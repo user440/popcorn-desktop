@@ -107,7 +107,7 @@ vjs.TextTrack.prototype.load = function () {
         };
 
         // Fetches a raw subtitle, locally or remotely
-        var get_subtitle = function (subtitle_url, callback, retry_cnt) {
+        var get_subtitle = function (subtitle_url, retry_cnt, callback) {
             // Fetches Locally
             if (fs.existsSync(path.join(subtitle_url))) {
                 fs.readFile(subtitle_url, function (error, data) {
@@ -130,7 +130,7 @@ vjs.TextTrack.prototype.load = function () {
                         retry_cnt++;
                         if (retry_cnt<5) {
                             console.log('subtitle url download failed. retry: ' + retry_cnt + ' out of 4');
-                            get_subtitle(subtitle_url, callback, retry_cnt);
+                            get_subtitle(subtitle_url, retry_cnt, callback);
                         } else {
                             $('.notification_alert').text(i18n.__('Error downloading subtitle.')).fadeIn('fast').delay(2500).fadeOut('fast');
                             console.warn('Failed to download subtitle!', error, response);
@@ -352,7 +352,7 @@ vjs.TextTrack.prototype.load = function () {
         });
 
         // Get it, Unzip it, Decode it, Send it
-        get_subtitle(this.src_, function (dataBuf) {
+        get_subtitle(this.src_, 0, function (dataBuf) {
             if (path.extname(this_.src_) === '.zip') {
                 decompress(dataBuf, function (dataBuf) {
                     decode(dataBuf, this_.language(), vjsBind);
@@ -364,7 +364,7 @@ vjs.TextTrack.prototype.load = function () {
             } else {
                 decode(dataBuf, this_.language(), vjsBind);
             }
-        }, 0);
+        });
 
     }
 
