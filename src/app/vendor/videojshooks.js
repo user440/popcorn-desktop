@@ -81,7 +81,7 @@ vjs.Player.prototype.onFullscreenChange = function () {
 // We fetch them when requested, process them and finally throw a parseCues their way
 vjs.TextTrack.prototype.load = function () {
     // Only load if not loaded yet.
-    if (this.readyState_ === 0) {
+    if (this.readyState_ === 0 || this.readyState_ === 3) {
         var this_ = this;
         this.readyState_ = 1;
 
@@ -107,8 +107,7 @@ vjs.TextTrack.prototype.load = function () {
         };
 
         // Fetches a raw subtitle, locally or remotely
-        var get_subtitle = function (subtitle_url, callback) {
-
+        var get_subtitle = function (subtitle_url, callback, retry_cnt) {
             // Fetches Locally
             if (fs.existsSync(path.join(subtitle_url))) {
                 fs.readFile(subtitle_url, function (error, data) {
@@ -127,7 +126,21 @@ vjs.TextTrack.prototype.load = function () {
                     if (!error && response.statusCode === 200) {
                         callback(data);
                     } else {
-                        console.warn('Failed to download subtitle!', error, response);
+                        if (retry_cnt === undefined) {
+                            retry_cnt=0;
+                        }
+                        retry_cnt++;
+                        if (retry_cnt<5) {
+                            console.log('subtitle url download failed. retry: ' + retry_cnt + ' out of 4');
+                            get_subtitle(subtitle_url, callback, retry_cnt);
+                        } else {
+                            $('.notification_alert').text(i18n.__('Error downloading subtitle.')).fadeIn('fast').delay(2500).fadeOut('fast');
+                            console.warn('Failed to download subtitle!', error, response);
+                        }
+                    }
+                    if (response.statusCode !== 200) {
+                        // change readyState to 0 because 3 (error state) will not allow additional retry if user select the same language later
+                        this_.readyState_ = 0;
                     }
                 });
             }
@@ -301,7 +314,7 @@ vjs.TextTrack.prototype.load = function () {
                     language = Settings.subtitle_language;
                     console.log('SUB charset: using subtitles_language setting (' + language + ') as default');
                 }
-                var langInfo = App.Localization.langcodes[language] || {};
+                var langInfo = App.Localization.langcodes[ (language.indexOf('|')>0 ? language.substr(0,language.indexOf('|')) : language) ] || {};
                 console.log('SUB charset expected:', langInfo.encoding);
                 if (langInfo.encoding !== undefined && langInfo.encoding.indexOf(detectedEncoding) < 0) {
                     // The detected encoding was unexepected to the language, so we'll use the most common
@@ -342,6 +355,7 @@ vjs.TextTrack.prototype.load = function () {
 
         // Get it, Unzip it, Decode it, Send it
         get_subtitle(this.src_, function (dataBuf) {
+            console.log(dataBuf.byteLength);
             if (path.extname(this_.src_) === '.zip') {
                 decompress(dataBuf, function (dataBuf) {
                     decode(dataBuf, this_.language(), vjsBind);
